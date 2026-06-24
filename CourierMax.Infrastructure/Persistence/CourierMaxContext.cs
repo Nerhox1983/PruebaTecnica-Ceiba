@@ -1,0 +1,48 @@
+﻿using CourierMax.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace CourierMax.Infrastructure.Persistence
+{
+    public class CourierMaxContext : DbContext
+    {
+        public CourierMaxContext(DbContextOptions<CourierMaxContext> options) : base(options) { }
+
+        public DbSet<Shipment> Shipments => Set<Shipment>();
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Shipment>(entity =>
+            {
+                entity.ToTable("Shipments", "dbo");                
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("ShipmentId");
+
+                entity.Property(e => e.SenderName).HasColumnName("SenderName").HasMaxLength(100).IsRequired();
+                entity.Property(e => e.ReceiverName).HasColumnName("ReceiverName").HasMaxLength(100).IsRequired();
+                entity.Property(e => e.ReceiverAddress).HasColumnName("ReceiverAddress").HasMaxLength(250).IsRequired();
+                entity.Property(e => e.DestinationCityId).HasColumnName("DestinationCityId").IsRequired();
+                entity.Property(e => e.WeightKg).HasColumnName("WeightKg").IsRequired();
+                entity.Property(e => e.HeightCm).HasColumnName("HeightCm");
+                entity.Property(e => e.TrackingCode).HasColumnName("TrackingCode").HasMaxLength(50).IsRequired();
+
+                entity.Property(e => e.CurrentStatus)
+                    .HasColumnName("CurrentStatus")
+                    .HasConversion<int>()
+                    .IsRequired();
+
+                entity.Property(e => e.TotalCost).HasColumnName("TotalCost").HasColumnType("decimal(18,2)");
+                entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt");
+                entity.Property(e => e.VehicleId).HasColumnName("VehicleId");
+
+                entity.Property<decimal>("BaseTariff").HasColumnName("BaseTariff").HasColumnType("decimal(18,2)").IsRequired();
+                entity.Property<decimal>("WeightSurcharge").HasColumnName("WeightSurcharge").HasColumnType("decimal(18,2)").IsRequired();
+                entity.Property<decimal>("DistanceSurcharge").HasColumnName("DistanceSurcharge").HasColumnType("decimal(18,2)").IsRequired();
+                entity.Property<decimal>("PackageTypeSurcharge").HasColumnName("PackageTypeSurcharge").HasColumnType("decimal(18,2)").IsRequired();
+                entity.Property(e => e.ServiceType).HasColumnName("ServiceType").HasMaxLength(100).IsRequired();
+                entity.Property<DateTime>("EstimatedDeliveryDate").HasColumnName("EstimatedDeliveryDate").HasColumnType("datetime2").IsRequired();
+            });
+        }
+    }
+}
