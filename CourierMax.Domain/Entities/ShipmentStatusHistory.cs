@@ -4,15 +4,15 @@ namespace CourierMax.Domain.Entities
 {
     public class ShipmentStatusHistory
     {
-        public int Id { get; private set; }
-        public int ShipmentId { get; private set; }
-        public ShipmentStatus PreviousStatus { get; private set; }
-        public ShipmentStatus NewStatus { get; private set; }
-        public DateTime ChangedAt { get; private set; }
-        public string UserId { get; private set; }
-        public string? ChangeReason { get; private set; }
+        public int Id { get; set; }
+        public int ShipmentId { get; set; }
+        public ShipmentStatus PreviousStatus { get; set; }
+        public ShipmentStatus NewStatus { get; set; }
+        public DateTime ChangedAt { get; set; }
+        public string UserId { get; set; }
+        public string? ChangeReason { get; set; }
 
-        private ShipmentStatusHistory() 
+        public ShipmentStatusHistory() 
         {
         }
 
