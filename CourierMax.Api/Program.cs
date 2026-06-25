@@ -3,6 +3,7 @@ using CourierMax.Application.Shipments.Commands;
 using CourierMax.Domain.Interfaces;
 using CourierMax.Infrastructure.Persistence;
 using CourierMax.Infrastructure.Repositories;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +22,14 @@ builder.Services.AddScoped<CourierMax.Application.Shipments.Queries.GetShipmentH
 
 builder.Services.AddScoped<CourierMax.Domain.Services.ISlaCalculator, CourierMax.Domain.Services.SlaCalculator>();
 builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
+builder.Services.AddScoped<ICityDistanceRepository, CityDistanceRepository>();
+
+builder.Services.AddScoped<IValidator<CreateShipmentCommand>, CourierMax.Application.Shipments.Commands.CreateShipment.CreateShipmentCommandValidator>();
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+});
 
 var app = builder.Build();
 

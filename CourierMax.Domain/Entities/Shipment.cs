@@ -34,6 +34,11 @@ namespace CourierMax.Domain.Entities
 
         public IReadOnlyCollection<ShipmentStatusHistory> StatusHistory => _statusHistory.AsReadOnly();
 
+        public decimal BaseTariff { get; private set; } = 0m;
+        public decimal WeightSurcharge { get; private set; } = 0m;
+        public decimal DistanceSurcharge { get; private set; } = 0m;
+        public decimal PackageTypeSurcharge { get; private set; } = 0m;
+
         [ExcludeFromCodeCoverage]
         private Shipment()
         {
@@ -99,17 +104,17 @@ namespace CourierMax.Domain.Entities
         }
 
         public void AssignVehicle(int vehicleId, decimal maxWeightKg, decimal maxVolumeM3, bool isDriverActive, string userId)
-        {            
+        {
             if (!isDriverActive)
                 throw new BusinessException("El envío solo puede asignarse a un conductor activo.");
-            
+
             if (WeightKg > maxWeightKg)
                 throw new BusinessException($"La asignación excede la capacidad máxima de peso del vehículo ({maxWeightKg} kg).");
-            
+
             decimal shipmentVolumeM3 = (LengthCm * WidthCm * HeightCm) / 1000000m;
             if (shipmentVolumeM3 > maxVolumeM3)
                 throw new BusinessException($"La asignación excede la capacidad máxima de volumen del vehículo ({maxVolumeM3} m³).");
-            
+
             var oldStatus = CurrentStatus;
             VehicleId = vehicleId;
             CurrentStatus = ShipmentStatus.ASIGNADO;
@@ -124,7 +129,7 @@ namespace CourierMax.Domain.Entities
 
             var oldStatus = CurrentStatus;
             CurrentStatus = ShipmentStatus.EN_TRANSITO;
-            
+
             _statusHistory.Add(new ShipmentStatusHistory(oldStatus, ShipmentStatus.EN_TRANSITO, userId, reason));
         }
 
@@ -135,8 +140,44 @@ namespace CourierMax.Domain.Entities
 
             var oldStatus = CurrentStatus;
             CurrentStatus = ShipmentStatus.ENTREGADO;
-            
+
             _statusHistory.Add(new ShipmentStatusHistory(oldStatus, ShipmentStatus.ENTREGADO, userId, reason));
+        }
+
+        public void CalculateAndSetFare(decimal distanceSurcharge)
+        {
+            decimal baseTariff = ServiceType switch
+            {
+                ServiceType.Estandar => 8000m,
+                ServiceType.Express => 15000m,
+                ServiceType.MismoDia => 25000m,
+                _ => throw new ArgumentOutOfRangeException(nameof(ServiceType), "Tipo de servicio no soportado")
+            };
+
+            decimal weightSurcharge = 0m;
+            if (WeightKg > 2m)
+            {
+                weightSurcharge = (WeightKg - 2m) * 1500m;
+            }
+
+            decimal subtotal = baseTariff + weightSurcharge + distanceSurcharge;
+
+            decimal packagePercentage = PackageType switch
+            {
+                PackageType.Fragil => 0.30m,
+                PackageType.Perecedero => 0.25m,
+                PackageType.Paquete => 0.0m,
+                _ => 0.0m
+            };
+
+            decimal packageTypeSurcharge = subtotal * packagePercentage;
+
+            this.TotalCost = subtotal + packageTypeSurcharge;
+
+            this.BaseTariff = baseTariff;
+            this.WeightSurcharge = weightSurcharge;
+            this.DistanceSurcharge = distanceSurcharge;
+            this.PackageTypeSurcharge = packageTypeSurcharge;
         }
     }
 }

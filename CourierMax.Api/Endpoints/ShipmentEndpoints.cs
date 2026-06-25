@@ -1,5 +1,6 @@
 ﻿using CourierMax.Application.Shipments.Commands;
 using CourierMax.Domain.Exceptions;
+using FluentValidation;
 
 namespace CourierMax.Api.Endpoints
 {
@@ -13,28 +14,45 @@ namespace CourierMax.Api.Endpoints
         {
             var group = app.MapGroup("/api/shipments")
                            .WithTags("Shipments");
-            
+
             group.MapPost("/", CreateShipmentAsync);
             group.MapGet("/{id:int}/history", GetShipmentHistoryAsync)
                 .WithName("GetShipmentHistory")
                 .WithOpenApi();
             group.MapPost("/assign-vehicle", AssignVehicleAsync).WithOpenApi();
-
-            
         }
 
         /// <summary>
-        /// Crea un nuevo envío en el sistema.
+        /// Crea un nuevo envío en el sistema aplicando validaciones de FluentValidation.
         /// </summary>
         /// <param name="command">Los datos necesarios para la creación del envío.</param>
         /// <param name="handler">El manejador encargado de procesar la creación del envío.</param>
+        /// <param name="validator">El validador de FluentValidation inyectado desde la capa de Application.</param>
         /// <returns>Un resultado HTTP 201 Created con el envío creado o 400/500 en caso de error.</returns>
         private static async Task<IResult> CreateShipmentAsync(
             CreateShipmentCommand command,
-            CreateShipmentCommandHandler handler)
+            CreateShipmentCommandHandler handler,
+            IValidator<CreateShipmentCommand> validator)
         {
             try
-            {
+            {                
+                var validationResult = await validator.ValidateAsync(command);
+
+                if (!validationResult.IsValid)
+                {                    
+                    var errores = validationResult.Errors.Select(e => new {
+                        Campo = e.PropertyName,
+                        Error = e.ErrorMessage
+                    });
+
+                    return Results.BadRequest(new
+                    {
+                        message = "Error de validación en la solicitud.",
+                        errors = errores
+                    });
+                }
+
+                // 2. Si es válido, procede a ejecutar el flujo normal del negocio
                 var result = await handler.HandleAsync(command);
                 return Results.Created($"/api/shipments/{result.Id}", result);
             }
@@ -43,9 +61,9 @@ namespace CourierMax.Api.Endpoints
                 return Results.BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
-            {             
+            {
                 return Results.Json(new { message = "Error interno", detail = ex.Message }, statusCode: 500);
-            }        
+            }
         }
 
         /// <summary>
@@ -82,13 +100,7 @@ namespace CourierMax.Api.Endpoints
         /// </summary>
         /// <param name="id">El identificador único del envío a consultar.</param>
         /// <param name="queryHandler">Manejador encargado de procesar la consulta y obtener los logs desde la persistencia.</param>
-        /// <returns>
-        /// Un <see cref="IResult"/> que representa la respuesta HTTP:
-        /// <list type="bullet">
-        /// <item><description><see cref="Microsoft.AspNetCore.Http.Results.Ok"/> (HTTP 200) con la lista estructurada del historial si existen registros.</description></item>
-        /// <item><description><see cref="Microsoft.AspNetCore.Http.Results.NotFound"/> (HTTP 404) con un mensaje aclaratorio si el envío no registra auditorías.</description></item>
-        /// </list>
-        /// </returns>
+        /// <returns>Un resultado HTTP 200 con la lista o 404 si no registra auditorías.</returns>
         private static async Task<IResult> GetShipmentHistoryAsync(
             int id,
             CourierMax.Application.Shipments.Queries.GetShipmentHistoryQueryHandler queryHandler)
@@ -97,7 +109,7 @@ namespace CourierMax.Api.Endpoints
 
             if (history == null || !history.Any())
             {
-                return Results.NotFound(new { message = $"No se encontró historial para el envío con ID {id}" }); //
+                return Results.NotFound(new { message = $"No se encontró historial para el envío con ID {id}" });
             }
 
             return Results.Ok(history);

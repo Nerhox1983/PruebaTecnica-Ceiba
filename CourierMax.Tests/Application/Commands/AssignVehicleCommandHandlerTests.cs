@@ -47,10 +47,9 @@ namespace CourierMax.Tests.Application.Commands
 
         [Fact]
         public async Task HandleAsync_ShouldAssignVehicleSuccessfully_WhenConstraintsAreMet()
-        {
-            // Arrange
+        {            
             var command = new AssignVehicleCommand { ShipmentId = 20, VehicleId = 1, UserId = "1" };
-            var shipment = CreateTestShipment(5.0m, 40, 30, 20); // 0.024 m³
+            var shipment = CreateTestShipment(5.0m, 40, 30, 20);
             var vehicle = new VehicleData
             {
                 VehicleId = 1,
@@ -63,10 +62,8 @@ namespace CourierMax.Tests.Application.Commands
             _shipmentRepositoryMock.Setup(r => r.GetByIdAsync(20)).ReturnsAsync(shipment);
             _vehicleRepositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(vehicle);
 
-            // Act
             var result = await _handler.HandleAsync(command);
-
-            // Assert
+            
             Assert.NotNull(result);
             Assert.Equal("ASIGNADO", result.Status);
             Assert.Equal("ABC-123", result.AssignedVehiclePlate);
@@ -76,7 +73,6 @@ namespace CourierMax.Tests.Application.Commands
         [Fact]
         public async Task HandleAsync_ShouldThrowBusinessException_WhenVehicleIsInactive()
         {
-            // Arrange
             var command = new AssignVehicleCommand { ShipmentId = 20, VehicleId = 2, UserId = "1" };
             var shipment = CreateTestShipment(5.0m, 40, 30, 20);
             var vehicle = new VehicleData { VehicleId = 2, IsActive = false };
@@ -84,7 +80,6 @@ namespace CourierMax.Tests.Application.Commands
             _shipmentRepositoryMock.Setup(r => r.GetByIdAsync(20)).ReturnsAsync(shipment);
             _vehicleRepositoryMock.Setup(r => r.GetByIdAsync(2)).ReturnsAsync(vehicle);
 
-            // Act & Assert
             var ex = await Assert.ThrowsAsync<BusinessException>(() => _handler.HandleAsync(command));
             Assert.Contains("conductor activo", ex.Message);
         }
@@ -92,7 +87,6 @@ namespace CourierMax.Tests.Application.Commands
         [Fact]
         public async Task HandleAsync_ShouldThrowBusinessException_WhenWeightExceedsCapacity()
         {
-            // Arrange
             var command = new AssignVehicleCommand { ShipmentId = 17, VehicleId = 4, UserId = "1" };
             var shipment = CreateTestShipment(12.50m, 30, 20, 15);
             var vehicle = new VehicleData
@@ -106,7 +100,6 @@ namespace CourierMax.Tests.Application.Commands
             _shipmentRepositoryMock.Setup(r => r.GetByIdAsync(17)).ReturnsAsync(shipment);
             _vehicleRepositoryMock.Setup(r => r.GetByIdAsync(4)).ReturnsAsync(vehicle);
 
-            // Act & Assert
             var ex = await Assert.ThrowsAsync<BusinessException>(() => _handler.HandleAsync(command));
             Assert.Contains("capacidad máxima de peso", ex.Message);
         }

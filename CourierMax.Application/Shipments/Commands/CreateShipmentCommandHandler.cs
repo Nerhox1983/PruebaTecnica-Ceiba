@@ -9,21 +9,26 @@ namespace CourierMax.Application.Shipments.Commands
     {
         private readonly IShipmentRepository _shipmentRepository;
         private readonly ISlaCalculator _slaCalculator;
+        private readonly ICityDistanceRepository _cityDistanceRepository;
 
-        public CreateShipmentCommandHandler(IShipmentRepository shipmentRepository, ISlaCalculator slaCalculator)
+        public CreateShipmentCommandHandler(
+            IShipmentRepository shipmentRepository,
+            ISlaCalculator slaCalculator,
+            ICityDistanceRepository cityDistanceRepository)
         {
             _shipmentRepository = shipmentRepository;
             _slaCalculator = slaCalculator;
+            _cityDistanceRepository = cityDistanceRepository;
         }
 
         public async Task<ShipmentDto> HandleAsync(CreateShipmentCommand command)
-        {            
+        {
             if (!Enum.TryParse(command.PackageType, true, out CourierMax.Domain.Enums.PackageType parsedPackageType))
                 throw new Domain.Exceptions.BusinessException($"El tipo de paquete '{command.PackageType}' no es válido.");
 
             if (!Enum.TryParse(command.ServiceType, true, out CourierMax.Domain.Enums.ServiceType parsedServiceType))
                 throw new Domain.Exceptions.BusinessException($"El tipo de servicio '{command.ServiceType}' no es válido.");
-         
+
             var shipment = new Shipment(
                 command.SenderName,
                 command.SenderPhone,
@@ -39,9 +44,9 @@ namespace CourierMax.Application.Shipments.Commands
                 command.HeightCm,
                 parsedPackageType,
                 parsedServiceType,
-                command.Price
+                0m
             );
-            
+
             int attempts = 0;
             while (await _shipmentRepository.ExistsByTrackingCodeAsync(shipment.TrackingCode))
             {
@@ -51,11 +56,18 @@ namespace CourierMax.Application.Shipments.Commands
 
                 shipment.RegenerateTrackingCode();
             }
-            
+
+            decimal distanceSurcharge = await _cityDistanceRepository.GetDistanceSurchargeAsync(
+                command.OriginCityId,
+                command.DestinationCityId
+            );
+
+            shipment.CalculateAndSetFare(distanceSurcharge);
+
             DateTime estimatedDelivery = _slaCalculator.CalculateEstimatedDeliveryDate(shipment.CreatedAt, parsedServiceType);
-            
-            shipment.EstimatedDeliveryDate = estimatedDelivery;            
-            await _shipmentRepository.AddAsync(shipment);            
+
+            shipment.EstimatedDeliveryDate = estimatedDelivery;
+            await _shipmentRepository.AddAsync(shipment);
             return new ShipmentDto
             {
                 Id = shipment.Id,

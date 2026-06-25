@@ -38,7 +38,7 @@ namespace CourierMax.Infrastructure.Repositories
             if (string.IsNullOrEmpty(shipment.TrackingCode))
             {
                 string uniqueId = Guid.NewGuid().ToString("N").Substring(0, 3).ToUpper();
-                shipment.TrackingCode = $"TRK-{uniqueId}";
+                shipment.TrackingCode = $"CM-{uniqueId}";
             }
             await _context.Shipments.AddAsync(shipment);
             await _context.SaveChangesAsync();
