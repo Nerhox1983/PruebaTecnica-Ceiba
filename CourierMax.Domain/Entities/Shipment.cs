@@ -8,6 +8,7 @@ namespace CourierMax.Domain.Entities
     public class Shipment
     {
         private static readonly Regex ColombiaPhoneRegex = new Regex(@"^(3[0-9]{9}|6[0-9]{9})$", RegexOptions.Compiled);
+        private readonly List<ShipmentStatusHistory> _statusHistory = new();
 
         public int Id { get; private set; }
         public string TrackingCode { get; set; } = string.Empty;
@@ -31,18 +32,20 @@ namespace CourierMax.Domain.Entities
         public DateTime CreatedAt { get; private set; }
         public DateTime EstimatedDeliveryDate { get; set; }
 
+        public IReadOnlyCollection<ShipmentStatusHistory> StatusHistory => _statusHistory.AsReadOnly();
+
         [ExcludeFromCodeCoverage]
         private Shipment()
         {
         }
 
         public Shipment(
-        string senderName, string senderPhone, string senderAddress,
-        string receiverName, string receiverPhone, string receiverAddress,
-        int originCityId, int destinationCityId,
-        decimal weightKg, decimal lengthCm, decimal widthCm, decimal heightCm,
-        PackageType packageType, ServiceType serviceType, decimal totalCost)
-        {            
+            string senderName, string senderPhone, string senderAddress,
+            string receiverName, string receiverPhone, string receiverAddress,
+            int originCityId, int destinationCityId,
+            decimal weightKg, decimal lengthCm, decimal widthCm, decimal heightCm,
+            PackageType packageType, ServiceType serviceType, decimal totalCost)
+        {
             ValidateData(senderPhone, receiverPhone, senderAddress, receiverAddress, weightKg, lengthCm, widthCm, heightCm);
 
             TrackingCode = GenerateUniqueTrackingCode();
@@ -63,13 +66,14 @@ namespace CourierMax.Domain.Entities
             TotalCost = totalCost;
             CurrentStatus = ShipmentStatus.CREADO;
             CreatedAt = DateTime.UtcNow;
+
+            _statusHistory.Add(new ShipmentStatusHistory(ShipmentStatus.CREADO, ShipmentStatus.CREADO, "System", "Registro inicial del envío."));
         }
 
         private void ValidateData(
             string senderPhone, string receiverPhone, string senderAddress, string receiverAddress,
             decimal weight, decimal length, decimal width, decimal height)
         {
-
             if (string.IsNullOrWhiteSpace(senderAddress) || string.IsNullOrWhiteSpace(receiverAddress))
                 throw new BusinessException("RN-04: Las direcciones no pueden estar vacías.");
 
@@ -94,29 +98,52 @@ namespace CourierMax.Domain.Entities
             TrackingCode = GenerateUniqueTrackingCode();
         }
 
-        public void AssignVehicle(string licensePlate)
+        public void AssignVehicle(string licensePlate, string userId)
         {
             if (string.IsNullOrWhiteSpace(licensePlate))
                 throw new BusinessException("La placa del vehículo no es válida.");
 
+            var oldStatus = CurrentStatus;
             VehicleId = licensePlate;
             CurrentStatus = ShipmentStatus.ASIGNADO;
+
+            _statusHistory.Add(new ShipmentStatusHistory(oldStatus, ShipmentStatus.ASIGNADO, userId));
         }
 
-        public void Transit()
+
+        public void Transit(string userId)
         {
             if (CurrentStatus != ShipmentStatus.ASIGNADO)
                 throw new InvalidOperationException("El envío debe estar asignado a un vehículo antes de iniciar tránsito.");
 
+            var oldStatus = CurrentStatus;
             CurrentStatus = ShipmentStatus.EN_TRANSITO;
+
+            _statusHistory.Add(new ShipmentStatusHistory(oldStatus, ShipmentStatus.EN_TRANSITO, userId));
         }
 
-        public void Deliver()
+        public void Deliver(string userId)
         {
             if (CurrentStatus != ShipmentStatus.EN_TRANSITO)
                 throw new InvalidOperationException("No se puede entregar un envío que no esté en tránsito.");
 
+            var oldStatus = CurrentStatus;
             CurrentStatus = ShipmentStatus.ENTREGADO;
+
+            _statusHistory.Add(new ShipmentStatusHistory(oldStatus, ShipmentStatus.ENTREGADO, userId));
+        }
+
+        public void TransitionToStatus(ShipmentStatus newStatus, string userId, string? reason)
+        {
+            if (newStatus == ShipmentStatus.CANCELADO && string.IsNullOrWhiteSpace(reason))
+            {
+                throw new BusinessException("RN-04: El motivo de la cancelacion es obligatorio");
+            }
+
+            var oldStatus = CurrentStatus;
+            CurrentStatus = newStatus;
+
+            _statusHistory.Add(new ShipmentStatusHistory(oldStatus, newStatus, userId, reason));
         }
     }
 }

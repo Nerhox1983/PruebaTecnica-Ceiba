@@ -32,14 +32,12 @@ namespace CourierMax.Tests.Domain.Entities
         [Fact]
         public void AssignVehicle_ShouldSetLicensePlateAndChangeStatusToAsignado_WhenLicensePlateIsValid()
         {
-            
             var shipment = CreateValidTestShipment();
             var validPlate = "ABC-123";
+            var testUserId = "user-test-123";
 
-            
-            shipment.AssignVehicle(validPlate);
+            shipment.AssignVehicle(validPlate, testUserId);
 
-            
             Assert.Equal(validPlate, shipment.VehicleId);
             Assert.Equal(ShipmentStatus.ASIGNADO, shipment.CurrentStatus);
         }
@@ -49,10 +47,11 @@ namespace CourierMax.Tests.Domain.Entities
         [InlineData("   ")]
         [InlineData(null)]
         public void AssignVehicle_ShouldThrowBusinessException_WhenLicensePlateIsNullOrEmpty(string invalidPlate)
-        {            
+        {
             var shipment = CreateValidTestShipment();
-            
-            var exception = Assert.Throws<BusinessException>(() => shipment.AssignVehicle(invalidPlate));
+            var testUserId = "user-test-123";
+
+            var exception = Assert.Throws<BusinessException>(() => shipment.AssignVehicle(invalidPlate, testUserId));
             Assert.Equal("La placa del vehículo no es válida.", exception.Message);
         }
 
@@ -62,21 +61,23 @@ namespace CourierMax.Tests.Domain.Entities
 
         [Fact]
         public void Transit_ShouldChangeStatusToEnTransito_WhenCurrentStatusIsAsignado()
-        {            
+        {
             var shipment = CreateValidTestShipment();
-            shipment.AssignVehicle("XYZ789");
-         
-            shipment.Transit();
-            
+            var testUserId = "user-test-123";
+            shipment.AssignVehicle("XYZ789", testUserId);
+
+            shipment.Transit(testUserId);
+
             Assert.Equal(ShipmentStatus.EN_TRANSITO, shipment.CurrentStatus);
         }
 
         [Fact]
         public void Transit_ShouldThrowInvalidOperationException_WhenCurrentStatusIsNotAsignado()
-        {            
+        {
             var shipment = CreateValidTestShipment();
-         
-            var exception = Assert.Throws<InvalidOperationException>(() => shipment.Transit());
+            var testUserId = "user-test-123";
+
+            var exception = Assert.Throws<InvalidOperationException>(() => shipment.Transit(testUserId));
             Assert.Equal("El envío debe estar asignado a un vehículo antes de iniciar tránsito.", exception.Message);
         }
 
@@ -87,22 +88,23 @@ namespace CourierMax.Tests.Domain.Entities
         [Fact]
         public void Deliver_ShouldChangeStatusToEntregado_WhenCurrentStatusIsEnTransito()
         {
-            
             var shipment = CreateValidTestShipment();
-            shipment.AssignVehicle("XYZ-789");
-            shipment.Transit();
-            
-            shipment.Deliver();
-            
+            var testUserId = "user-test-123";
+            shipment.AssignVehicle("XYZ-789", testUserId);
+            shipment.Transit(testUserId);
+
+            shipment.Deliver(testUserId);
+
             Assert.Equal(ShipmentStatus.ENTREGADO, shipment.CurrentStatus);
         }
 
         [Fact]
         public void Deliver_ShouldThrowInvalidOperationException_WhenCurrentStatusIsNotEnTransito()
-        {            
+        {
             var shipment = CreateValidTestShipment();
-         
-            var exception = Assert.Throws<InvalidOperationException>(() => shipment.Deliver());
+            var testUserId = "user-test-123";
+
+            var exception = Assert.Throws<InvalidOperationException>(() => shipment.Deliver(testUserId));
             Assert.Equal("No se puede entregar un envío que no esté en tránsito.", exception.Message);
         }
 
@@ -133,7 +135,7 @@ namespace CourierMax.Tests.Domain.Entities
                 serviceType: ServiceType.Estandar,
                 totalCost: 14600m
             ));
-            
+
             Assert.Equal("RN-04: Las direcciones no pueden estar vacías.", exception.Message);
         }
 
@@ -142,7 +144,7 @@ namespace CourierMax.Tests.Domain.Entities
         [InlineData("31012345678")]
         [InlineData("2101234567")]
         public void Constructor_ShouldThrowBusinessException_WhenPhonesAreInvalid(string invalidPhone)
-        {            
+        {
             var exception = Assert.Throws<BusinessException>(() => new Shipment(
                 senderName: "Sergio Cáceres",
                 senderPhone: invalidPhone,
@@ -160,7 +162,7 @@ namespace CourierMax.Tests.Domain.Entities
                 serviceType: ServiceType.Estandar,
                 totalCost: 14600m
             ));
-         
+
             Assert.Equal("RN-04: El teléfono debe tener 10 dígitos y comenzar con 3 o 6.", exception.Message);
         }
 
@@ -168,7 +170,7 @@ namespace CourierMax.Tests.Domain.Entities
         [InlineData(0.0)]
         [InlineData(100.1)]
         public void Constructor_ShouldThrowBusinessException_WhenWeightIsOutOfRange(decimal invalidWeight)
-        {            
+        {
             var exception = Assert.Throws<BusinessException>(() => new Shipment(
                 senderName: "Sergio Cáceres",
                 senderPhone: "3101234567",
@@ -186,7 +188,7 @@ namespace CourierMax.Tests.Domain.Entities
                 serviceType: ServiceType.Estandar,
                 totalCost: 14600m
             ));
-         
+
             Assert.Equal("RN-04: El peso por envío debe estar entre 0.1 kg y 100 kg.", exception.Message);
         }
 
@@ -196,7 +198,7 @@ namespace CourierMax.Tests.Domain.Entities
         [InlineData(20, 0, 20)]
         [InlineData(20, 20, 201)]
         public void Constructor_ShouldThrowBusinessException_WhenDimensionsAreOutOfRange(int length, int width, int height)
-        {            
+        {
             var exception = Assert.Throws<BusinessException>(() => new Shipment(
                 senderName: "Sergio Cáceres",
                 senderPhone: "3101234567",
@@ -214,7 +216,7 @@ namespace CourierMax.Tests.Domain.Entities
                 serviceType: ServiceType.Estandar,
                 totalCost: 14600m
             ));
-         
+
             Assert.Equal("RN-04: Las dimensiones deben estar entre 1 cm y 200 cm por cada lado.", exception.Message);
         }
 

@@ -8,6 +8,7 @@ namespace CourierMax.Infrastructure.Persistence
         public CourierMaxContext(DbContextOptions<CourierMaxContext> options) : base(options) { }
 
         public DbSet<Shipment> Shipments => Set<Shipment>();
+        public DbSet<ShipmentStatusHistory> ShipmentStatusHistories => Set<ShipmentStatusHistory>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -15,7 +16,7 @@ namespace CourierMax.Infrastructure.Persistence
 
             modelBuilder.Entity<Shipment>(entity =>
             {
-                entity.ToTable("Shipments", "dbo");                
+                entity.ToTable("Shipments", "dbo");
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Id).HasColumnName("ShipmentId");
 
@@ -42,6 +43,30 @@ namespace CourierMax.Infrastructure.Persistence
                 entity.Property<decimal>("PackageTypeSurcharge").HasColumnName("PackageTypeSurcharge").HasColumnType("decimal(18,2)").IsRequired();
                 entity.Property(e => e.ServiceType).HasColumnName("ServiceType").HasMaxLength(100).IsRequired();
                 entity.Property<DateTime>("EstimatedDeliveryDate").HasColumnName("EstimatedDeliveryDate").HasColumnType("datetime2").IsRequired();
+
+                var navigation = entity.Metadata.FindNavigation(nameof(Shipment.StatusHistory));
+                navigation?.SetPropertyAccessMode(PropertyAccessMode.Field);
+            });
+            
+            modelBuilder.Entity<ShipmentStatusHistory>(entity =>
+            {
+                entity.ToTable("ShipmentStatusLogs", "dbo");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("StatusLogId");
+
+                entity.Property(e => e.ShipmentId).HasColumnName("ShipmentId").IsRequired();
+
+                entity.Property(e => e.PreviousStatus).HasColumnName("PreviousStatus");
+                entity.Property(e => e.NewStatus).HasColumnName("NewStatus").IsRequired();
+
+                entity.Property(e => e.ChangedAt).HasColumnName("ChangedAt").IsRequired();
+                entity.Property(e => e.ChangeReason).HasColumnName("ChangeReason");
+                entity.Property(e => e.UserId).HasColumnName("UserId").IsRequired();
+            
+                entity.HasOne<Shipment>()
+                    .WithMany(s => s.StatusHistory)
+                    .HasForeignKey(e => e.ShipmentId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

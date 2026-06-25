@@ -1,7 +1,9 @@
 ﻿namespace CourierMax.Application.Shipments.Commands
 {
-    public record AssignVehicleCommand(
-        int ShipmentId,
-        string LicensePlate
-    );
+    public class AssignVehicleCommand
+    {
+        public int ShipmentId { get; set; }
+        public string LicensePlate { get; set; } = string.Empty;
+        public string UserId { get; set; } = string.Empty;
+    }
 }

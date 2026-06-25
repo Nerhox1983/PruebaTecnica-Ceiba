@@ -40,5 +40,13 @@ namespace CourierMax.Infrastructure.Repositories
         {
             return await _context.Shipments.AnyAsync(s => s.TrackingCode == trackingCode);
         }
+
+        public async Task<List<ShipmentStatusHistory>> GetStatusHistoryAsync(int shipmentId)
+        {
+            return await _context.ShipmentStatusHistories
+                .Where(h => h.ShipmentId == shipmentId)
+                .OrderBy(h => h.ChangedAt)
+                .ToListAsync();
+        }
     }
 }

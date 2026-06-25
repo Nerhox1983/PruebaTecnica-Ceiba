@@ -9,6 +9,8 @@ namespace CourierMax.Domain.Interfaces
         Task UpdateAsync(Shipment shipment);
 
         Task<bool> ExistsByTrackingCodeAsync(string trackingCode);
+
+        Task<List<ShipmentStatusHistory>> GetStatusHistoryAsync(int shipmentId);
         
     }
 }
