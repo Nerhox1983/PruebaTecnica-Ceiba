@@ -22,7 +22,6 @@ namespace CourierMax.Tests.Domain.Services
 
             var result = _fareCalculatorService.CalculateFare(serviceType, packageType, weightKg, distanceSurcharge);
 
-            // Assert
             Assert.Equal(8000m, result.total);
             Assert.Equal(8000m, result.baseTariff);
             Assert.Equal(0m, result.weightSurcharge);
@@ -38,8 +37,6 @@ namespace CourierMax.Tests.Domain.Services
             decimal distanceSurcharge = 5000m;
 
             var result = _fareCalculatorService.CalculateFare(serviceType, packageType, weightKg, distanceSurcharge);
-
-            // Assert
             Assert.Equal(23000m, result.total);
             Assert.Equal(15000m, result.baseTariff);
             Assert.Equal(3000m, result.weightSurcharge);
@@ -66,10 +63,8 @@ namespace CourierMax.Tests.Domain.Services
         [Fact]
         public void CalculateFare_ShouldThrowArgumentOutOfRangeException_WhenServiceTypeIsInvalid()
         {
-            // Arrange
-            var invalidServiceType = (ServiceType)999; // Forzamos un enum inexistente
+            var invalidServiceType = (ServiceType)999;
 
-            // Act & Assert
             Assert.Throws<ArgumentOutOfRangeException>(() =>
                 _fareCalculatorService.CalculateFare(invalidServiceType, PackageType.Paquete, 1.0m, 0m));
         }

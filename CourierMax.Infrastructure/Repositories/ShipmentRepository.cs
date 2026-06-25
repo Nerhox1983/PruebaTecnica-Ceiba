@@ -62,5 +62,16 @@ namespace CourierMax.Infrastructure.Repositories
                 .OrderBy(h => h.ChangedAt)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<Shipment>> GetDelayedShipmentsAsync(DateTime startDate, DateTime endDate)
+        {
+            var now = DateTime.UtcNow;
+
+            return await _context.Shipments
+                .Where(s => s.CreatedAt >= startDate && s.CreatedAt <= endDate)
+                .Where(s => s.CurrentStatus != ShipmentStatus.ENTREGADO)
+                .Where(s => s.EstimatedDeliveryDate < now)
+                .ToListAsync();
+        }
     }
 }

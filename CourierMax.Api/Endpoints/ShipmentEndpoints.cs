@@ -1,6 +1,8 @@
 ﻿using CourierMax.Application.Shipments.Commands;
+using CourierMax.Application.Shipments.Queries;
 using CourierMax.Domain.Exceptions;
 using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
 
 namespace CourierMax.Api.Endpoints
 {
@@ -20,6 +22,9 @@ namespace CourierMax.Api.Endpoints
                 .WithName("GetShipmentHistory")
                 .WithOpenApi();
             group.MapPost("/assign-vehicle", AssignVehicleAsync).WithOpenApi();
+            group.MapGet("/delayed", GetDelayedShipmentsAsync)
+                .WithName("GetDelayedShipments")
+                .WithOpenApi();
         }
 
         /// <summary>
@@ -51,8 +56,7 @@ namespace CourierMax.Api.Endpoints
                         errors = errores
                     });
                 }
-
-                // 2. Si es válido, procede a ejecutar el flujo normal del negocio
+                
                 var result = await handler.HandleAsync(command);
                 return Results.Created($"/api/shipments/{result.Id}", result);
             }
@@ -113,6 +117,25 @@ namespace CourierMax.Api.Endpoints
             }
 
             return Results.Ok(history);
+        }
+
+        /// <summary>
+        /// Consulta los envíos que presentan retrasos respecto a su SLA dentro de un rango de fechas.
+        /// </summary>
+        private static async Task<IResult> GetDelayedShipmentsAsync(
+            [FromQuery] DateTime startDate,
+            [FromQuery] DateTime endDate,
+            CourierMax.Application.Shipments.Queries.GetDelayedShipmentsQueryHandler queryHandler)
+        {
+            if (startDate > endDate)
+            {
+                return Results.BadRequest(new { message = "La fecha de inicio no puede ser mayor a la fecha de fin." });
+            }
+
+            var query = new GetDelayedShipmentsQuery(startDate, endDate);
+            var delayedShipments = await queryHandler.HandleAsync(query);
+
+            return Results.Ok(delayedShipments);
         }
     }
 }

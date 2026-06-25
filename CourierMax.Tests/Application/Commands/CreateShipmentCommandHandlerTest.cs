@@ -42,7 +42,6 @@ namespace CourierMax.Tests.Application.Commands
                 .Setup(calc => calc.CalculateEstimatedDeliveryDate(It.IsAny<DateTime>(), It.IsAny<ServiceType>()))
                 .Returns(expectedDeliveryDate);
 
-            // Simulación base para que el cálculo de distancia devuelva un valor dummy exitoso
             _cityDistanceRepositoryMock
                 .Setup(repo => repo.GetDistanceSurchargeAsync(It.IsAny<int>(), It.IsAny<int>()))
                 .ReturnsAsync(8000m);
@@ -98,7 +97,6 @@ namespace CourierMax.Tests.Application.Commands
                 .Setup(calc => calc.CalculateEstimatedDeliveryDate(It.IsAny<DateTime>(), It.IsAny<ServiceType>()))
                 .Returns(DateTime.UtcNow.AddDays(1));
 
-            // Simulación requerida para evitar nulos en el cálculo del Handler
             _cityDistanceRepositoryMock
                 .Setup(repo => repo.GetDistanceSurchargeAsync(It.IsAny<int>(), It.IsAny<int>()))
                 .ReturnsAsync(8000m);
