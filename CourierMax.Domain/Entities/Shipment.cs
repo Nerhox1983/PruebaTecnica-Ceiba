@@ -111,7 +111,7 @@ namespace CourierMax.Domain.Entities
         }
 
 
-        public void Transit(string userId)
+        public void Transit(string userId, string reason)
         {
             if (CurrentStatus != ShipmentStatus.ASIGNADO)
                 throw new InvalidOperationException("El envío debe estar asignado a un vehículo antes de iniciar tránsito.");
@@ -119,10 +119,11 @@ namespace CourierMax.Domain.Entities
             var oldStatus = CurrentStatus;
             CurrentStatus = ShipmentStatus.EN_TRANSITO;
 
-            _statusHistory.Add(new ShipmentStatusHistory(oldStatus, ShipmentStatus.EN_TRANSITO, userId));
+            // Pasamos el motivo dinámico como exige el RF-03
+            _statusHistory.Add(new ShipmentStatusHistory(oldStatus, ShipmentStatus.EN_TRANSITO, userId, reason));
         }
 
-        public void Deliver(string userId)
+        public void Deliver(string userId, string reason)
         {
             if (CurrentStatus != ShipmentStatus.EN_TRANSITO)
                 throw new InvalidOperationException("No se puede entregar un envío que no esté en tránsito.");
@@ -130,20 +131,8 @@ namespace CourierMax.Domain.Entities
             var oldStatus = CurrentStatus;
             CurrentStatus = ShipmentStatus.ENTREGADO;
 
-            _statusHistory.Add(new ShipmentStatusHistory(oldStatus, ShipmentStatus.ENTREGADO, userId));
-        }
-
-        public void TransitionToStatus(ShipmentStatus newStatus, string userId, string? reason)
-        {
-            if (newStatus == ShipmentStatus.CANCELADO && string.IsNullOrWhiteSpace(reason))
-            {
-                throw new BusinessException("RN-04: El motivo de la cancelacion es obligatorio");
-            }
-
-            var oldStatus = CurrentStatus;
-            CurrentStatus = newStatus;
-
-            _statusHistory.Add(new ShipmentStatusHistory(oldStatus, newStatus, userId, reason));
+            // Pasamos el motivo dinámico como exige el RF-03
+            _statusHistory.Add(new ShipmentStatusHistory(oldStatus, ShipmentStatus.ENTREGADO, userId, reason));
         }
     }
 }

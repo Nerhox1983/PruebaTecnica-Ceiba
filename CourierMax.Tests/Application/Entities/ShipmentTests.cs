@@ -64,11 +64,13 @@ namespace CourierMax.Tests.Domain.Entities
         {
             var shipment = CreateValidTestShipment();
             var testUserId = "user-test-123";
+            var reason = "Inicio de ruta troncal nacional";
             shipment.AssignVehicle("XYZ789", testUserId);
 
-            shipment.Transit(testUserId);
+            shipment.Transit(testUserId, reason);
 
             Assert.Equal(ShipmentStatus.EN_TRANSITO, shipment.CurrentStatus);
+            Assert.Equal(reason, shipment.StatusHistory.Last().ChangeReason);
         }
 
         [Fact]
@@ -76,8 +78,9 @@ namespace CourierMax.Tests.Domain.Entities
         {
             var shipment = CreateValidTestShipment();
             var testUserId = "user-test-123";
+            var reason = "Inicio de ruta";
 
-            var exception = Assert.Throws<InvalidOperationException>(() => shipment.Transit(testUserId));
+            var exception = Assert.Throws<InvalidOperationException>(() => shipment.Transit(testUserId, reason));
             Assert.Equal("El envío debe estar asignado a un vehículo antes de iniciar tránsito.", exception.Message);
         }
 
@@ -90,12 +93,14 @@ namespace CourierMax.Tests.Domain.Entities
         {
             var shipment = CreateValidTestShipment();
             var testUserId = "user-test-123";
+            var reason = "Entregado en portería con firma";
             shipment.AssignVehicle("XYZ-789", testUserId);
-            shipment.Transit(testUserId);
+            shipment.Transit(testUserId, "En ruta");
 
-            shipment.Deliver(testUserId);
+            shipment.Deliver(testUserId, reason);
 
             Assert.Equal(ShipmentStatus.ENTREGADO, shipment.CurrentStatus);
+            Assert.Equal(reason, shipment.StatusHistory.Last().ChangeReason);
         }
 
         [Fact]
@@ -103,8 +108,9 @@ namespace CourierMax.Tests.Domain.Entities
         {
             var shipment = CreateValidTestShipment();
             var testUserId = "user-test-123";
+            var reason = "Entrega";
 
-            var exception = Assert.Throws<InvalidOperationException>(() => shipment.Deliver(testUserId));
+            var exception = Assert.Throws<InvalidOperationException>(() => shipment.Deliver(testUserId, reason));
             Assert.Equal("No se puede entregar un envío que no esté en tránsito.", exception.Message);
         }
 
