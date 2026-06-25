@@ -1,9 +1,6 @@
 ﻿using CourierMax.Domain.Entities;
 using CourierMax.Domain.Enums;
 using CourierMax.Domain.Exceptions;
-using System;
-using System.Linq;
-using Xunit;
 
 namespace CourierMax.Tests.Domain.Entities
 {

@@ -124,8 +124,7 @@ namespace CourierMax.Domain.Entities
 
             var oldStatus = CurrentStatus;
             CurrentStatus = ShipmentStatus.EN_TRANSITO;
-
-            // Pasamos el motivo dinámico como exige el RF-03
+            
             _statusHistory.Add(new ShipmentStatusHistory(oldStatus, ShipmentStatus.EN_TRANSITO, userId, reason));
         }
 
@@ -136,8 +135,7 @@ namespace CourierMax.Domain.Entities
 
             var oldStatus = CurrentStatus;
             CurrentStatus = ShipmentStatus.ENTREGADO;
-
-            // Pasamos el motivo dinámico como exige el RF-03
+            
             _statusHistory.Add(new ShipmentStatusHistory(oldStatus, ShipmentStatus.ENTREGADO, userId, reason));
         }
     }

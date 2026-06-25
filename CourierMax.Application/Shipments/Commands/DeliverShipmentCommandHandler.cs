@@ -22,10 +22,8 @@ namespace CourierMax.Application.Shipments.Commands
                 throw new KeyNotFoundException($"No se encontró el envío con ID {command.ShipmentId}");
             }
 
-            // Modifica el estado en memoria
             shipment.Deliver(command.UserId, command.Reason);
 
-            // Se apoya en el repositorio tal cual como en la creación
             await _shipmentRepository.UpdateAsync(shipment);
         }
     }
