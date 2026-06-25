@@ -1,6 +1,5 @@
 ﻿using CourierMax.Application.Shipments.Commands;
 using CourierMax.Domain.Exceptions;
-using Microsoft.AspNetCore.Mvc;
 
 namespace CourierMax.Api.Endpoints
 {

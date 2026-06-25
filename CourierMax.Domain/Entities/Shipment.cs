@@ -28,7 +28,7 @@ namespace CourierMax.Domain.Entities
         public ServiceType ServiceType { get; private set; }
         public decimal TotalCost { get; private set; }
         public ShipmentStatus CurrentStatus { get; private set; }
-        public string? VehicleId { get; private set; }
+        public int? VehicleId { get; private set; }
         public DateTime CreatedAt { get; private set; }
         public DateTime EstimatedDeliveryDate { get; set; }
 
@@ -98,18 +98,24 @@ namespace CourierMax.Domain.Entities
             TrackingCode = GenerateUniqueTrackingCode();
         }
 
-        public void AssignVehicle(string licensePlate, string userId)
-        {
-            if (string.IsNullOrWhiteSpace(licensePlate))
-                throw new BusinessException("La placa del vehículo no es válida.");
-
+        public void AssignVehicle(int vehicleId, decimal maxWeightKg, decimal maxVolumeM3, bool isDriverActive, string userId)
+        {            
+            if (!isDriverActive)
+                throw new BusinessException("El envío solo puede asignarse a un conductor activo.");
+            
+            if (WeightKg > maxWeightKg)
+                throw new BusinessException($"La asignación excede la capacidad máxima de peso del vehículo ({maxWeightKg} kg).");
+            
+            decimal shipmentVolumeM3 = (LengthCm * WidthCm * HeightCm) / 1000000m;
+            if (shipmentVolumeM3 > maxVolumeM3)
+                throw new BusinessException($"La asignación excede la capacidad máxima de volumen del vehículo ({maxVolumeM3} m³).");
+            
             var oldStatus = CurrentStatus;
-            VehicleId = licensePlate;
+            VehicleId = vehicleId;
             CurrentStatus = ShipmentStatus.ASIGNADO;
 
-            _statusHistory.Add(new ShipmentStatusHistory(oldStatus, ShipmentStatus.ASIGNADO, userId));
+            _statusHistory.Add(new ShipmentStatusHistory(oldStatus, ShipmentStatus.ASIGNADO, "System"));
         }
-
 
         public void Transit(string userId, string reason)
         {

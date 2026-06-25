@@ -1,6 +1,9 @@
 ﻿using CourierMax.Domain.Entities;
 using CourierMax.Domain.Enums;
 using CourierMax.Domain.Exceptions;
+using System;
+using System.Linq;
+using Xunit;
 
 namespace CourierMax.Tests.Domain.Entities
 {
@@ -30,29 +33,55 @@ namespace CourierMax.Tests.Domain.Entities
         #region Pruebas para AssignVehicle
 
         [Fact]
-        public void AssignVehicle_ShouldSetLicensePlateAndChangeStatusToAsignado_WhenLicensePlateIsValid()
+        public void AssignVehicle_ShouldSetVehicleIdAndChangeStatusToAsignado_WhenDataIsValid()
         {
             var shipment = CreateValidTestShipment();
-            var validPlate = "ABC-123";
+            var testVehicleId = 1;
+            var maxWeight = 500.0m;
+            var maxVolume = 10.0m;
+            var isDriverActive = true;
             var testUserId = "user-test-123";
 
-            shipment.AssignVehicle(validPlate, testUserId);
+            shipment.AssignVehicle(testVehicleId, maxWeight, maxVolume, isDriverActive, testUserId);
 
-            Assert.Equal(validPlate, shipment.VehicleId);
+            Assert.Equal(testVehicleId, shipment.VehicleId);
             Assert.Equal(ShipmentStatus.ASIGNADO, shipment.CurrentStatus);
         }
 
-        [Theory]
-        [InlineData("")]
-        [InlineData("   ")]
-        [InlineData(null)]
-        public void AssignVehicle_ShouldThrowBusinessException_WhenLicensePlateIsNullOrEmpty(string invalidPlate)
+        [Fact]
+        public void AssignVehicle_ShouldThrowBusinessException_WhenDriverIsNotActive()
         {
             var shipment = CreateValidTestShipment();
             var testUserId = "user-test-123";
 
-            var exception = Assert.Throws<BusinessException>(() => shipment.AssignVehicle(invalidPlate, testUserId));
-            Assert.Equal("La placa del vehículo no es válida.", exception.Message);
+            var exception = Assert.Throws<BusinessException>(() =>
+                shipment.AssignVehicle(1, 500.0m, 10.0m, false, testUserId));
+
+            Assert.Equal("El envío solo puede asignarse a un conductor activo.", exception.Message);
+        }
+
+        [Fact]
+        public void AssignVehicle_ShouldThrowBusinessException_WhenShipmentExceedsMaxWeight()
+        {
+            var shipment = CreateValidTestShipment();
+            var testUserId = "user-test-123";
+
+            var exception = Assert.Throws<BusinessException>(() =>
+                shipment.AssignVehicle(1, 4.0m, 10.0m, true, testUserId));
+
+            Assert.Contains("La asignación excede la capacidad máxima de peso", exception.Message);
+        }
+
+        [Fact]
+        public void AssignVehicle_ShouldThrowBusinessException_WhenShipmentExceedsMaxVolume()
+        {
+            var shipment = CreateValidTestShipment();
+            var testUserId = "user-test-123";
+
+            var exception = Assert.Throws<BusinessException>(() =>
+                shipment.AssignVehicle(1, 500.0m, 0.005m, true, testUserId));
+
+            Assert.Contains("La asignación excede la capacidad máxima de volumen", exception.Message);
         }
 
         #endregion
@@ -65,7 +94,8 @@ namespace CourierMax.Tests.Domain.Entities
             var shipment = CreateValidTestShipment();
             var testUserId = "user-test-123";
             var reason = "Inicio de ruta troncal nacional";
-            shipment.AssignVehicle("XYZ789", testUserId);
+
+            shipment.AssignVehicle(1, 500.0m, 10.0m, true, testUserId);
 
             shipment.Transit(testUserId, reason);
 
@@ -94,7 +124,8 @@ namespace CourierMax.Tests.Domain.Entities
             var shipment = CreateValidTestShipment();
             var testUserId = "user-test-123";
             var reason = "Entregado en portería con firma";
-            shipment.AssignVehicle("XYZ-789", testUserId);
+
+            shipment.AssignVehicle(1, 500.0m, 10.0m, true, testUserId);
             shipment.Transit(testUserId, "En ruta");
 
             shipment.Deliver(testUserId, reason);

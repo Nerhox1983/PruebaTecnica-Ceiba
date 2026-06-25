@@ -1,4 +1,5 @@
 ﻿using CourierMax.Domain.Entities;
+using CourierMax.Domain.Enums;
 using CourierMax.Domain.Interfaces;
 using CourierMax.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -16,14 +17,27 @@ namespace CourierMax.Infrastructure.Repositories
 
         public async Task<Shipment?> GetByIdAsync(int id)
         {
-            return await _context.Shipments.FindAsync(id);
+            try
+            {
+                return await _context.Shipments.FindAsync(id);
+            }
+            catch (InvalidOperationException)
+            {
+                var rawShipment = await _context.Shipments
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(s => s.Id == id);
+
+                if (rawShipment == null) return null;
+
+                return await _context.Shipments.FirstOrDefaultAsync(s => s.Id == id);
+            }
         }
 
         public async Task AddAsync(Shipment shipment)
         {
             if (string.IsNullOrEmpty(shipment.TrackingCode))
-            {                
-                string uniqueId = Guid.NewGuid().ToString("N").Substring(0, 3).ToUpper();                
+            {
+                string uniqueId = Guid.NewGuid().ToString("N").Substring(0, 3).ToUpper();
                 shipment.TrackingCode = $"TRK-{uniqueId}";
             }
             await _context.Shipments.AddAsync(shipment);

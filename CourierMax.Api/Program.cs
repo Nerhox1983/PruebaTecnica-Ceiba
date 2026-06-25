@@ -20,6 +20,7 @@ builder.Services.AddScoped<AssignVehicleCommandHandler>();
 builder.Services.AddScoped<CourierMax.Application.Shipments.Queries.GetShipmentHistoryQueryHandler>();
 
 builder.Services.AddScoped<CourierMax.Domain.Services.ISlaCalculator, CourierMax.Domain.Services.SlaCalculator>();
+builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
 
 var app = builder.Build();
 

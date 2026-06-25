@@ -1,4 +1,5 @@
 ﻿using CourierMax.Application.Shipments.DTOs;
+using CourierMax.Domain.Exceptions;
 using CourierMax.Domain.Interfaces;
 
 namespace CourierMax.Application.Shipments.Commands
@@ -6,10 +7,12 @@ namespace CourierMax.Application.Shipments.Commands
     public class AssignVehicleCommandHandler
     {
         private readonly IShipmentRepository _shipmentRepository;
+        private readonly IVehicleRepository _vehicleRepository;
 
-        public AssignVehicleCommandHandler(IShipmentRepository shipmentRepository)
+        public AssignVehicleCommandHandler(IShipmentRepository shipmentRepository, IVehicleRepository vehicleRepository)
         {
             _shipmentRepository = shipmentRepository;
+            _vehicleRepository = vehicleRepository;
         }
 
         public async Task<ShipmentDto> HandleAsync(AssignVehicleCommand command)
@@ -20,7 +23,13 @@ namespace CourierMax.Application.Shipments.Commands
                 throw new KeyNotFoundException($"No se encontró el envío con ID {command.ShipmentId}");
             }
 
-            shipment.AssignVehicle(command.LicensePlate, command.UserId);
+            var vehicle = await _vehicleRepository.GetByIdAsync(command.VehicleId);
+            if (vehicle == null)
+            {
+                throw new BusinessException($"El vehículo con ID {command.VehicleId} no está registrado en el sistema.");
+            }
+
+            shipment.AssignVehicle(vehicle.VehicleId, vehicle.MaxWeightKg, vehicle.MaxVolumeM3, vehicle.IsActive, command.UserId);
 
             await _shipmentRepository.UpdateAsync(shipment);
 
@@ -37,7 +46,7 @@ namespace CourierMax.Application.Shipments.Commands
                 WeightKg = shipment.WeightKg,
                 Price = shipment.TotalCost,
                 Status = shipment.CurrentStatus.ToString(),
-                AssignedVehiclePlate = shipment.VehicleId,
+                AssignedVehiclePlate = vehicle.LicensePlate,
                 CreatedAt = shipment.CreatedAt
             };
         }

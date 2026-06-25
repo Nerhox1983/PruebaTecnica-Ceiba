@@ -1,5 +1,6 @@
 ﻿using CourierMax.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace CourierMax.Infrastructure.Persistence
 {
@@ -30,24 +31,37 @@ namespace CourierMax.Infrastructure.Persistence
 
                 entity.Property(e => e.CurrentStatus)
                     .HasColumnName("CurrentStatus")
-                    .HasConversion<int>()
+                    .HasConversion<string>()
+                    .IsRequired();
+                
+                entity.Property(e => e.PackageType)
+                    .HasColumnName("PackageType")
+                    .HasConversion(
+                        v => v.ToString(),
+                        v => ConvertToPackageType(v)
+                    );
+
+                entity.Property(e => e.ServiceType)
+                    .HasColumnName("ServiceType")
+                    .HasConversion<string>()
                     .IsRequired();
 
                 entity.Property(e => e.TotalCost).HasColumnName("TotalCost").HasColumnType("decimal(18,2)");
                 entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt");
-                entity.Property(e => e.VehicleId).HasColumnName("VehicleId");
+                entity.Property(e => e.VehicleId)
+                    .HasColumnName("VehicleId")
+                    .IsRequired(false);
 
                 entity.Property<decimal>("BaseTariff").HasColumnName("BaseTariff").HasColumnType("decimal(18,2)").IsRequired();
                 entity.Property<decimal>("WeightSurcharge").HasColumnName("WeightSurcharge").HasColumnType("decimal(18,2)").IsRequired();
                 entity.Property<decimal>("DistanceSurcharge").HasColumnName("DistanceSurcharge").HasColumnType("decimal(18,2)").IsRequired();
                 entity.Property<decimal>("PackageTypeSurcharge").HasColumnName("PackageTypeSurcharge").HasColumnType("decimal(18,2)").IsRequired();
-                entity.Property(e => e.ServiceType).HasColumnName("ServiceType").HasMaxLength(100).IsRequired();
                 entity.Property<DateTime>("EstimatedDeliveryDate").HasColumnName("EstimatedDeliveryDate").HasColumnType("datetime2").IsRequired();
 
                 var navigation = entity.Metadata.FindNavigation(nameof(Shipment.StatusHistory));
                 navigation?.SetPropertyAccessMode(PropertyAccessMode.Field);
             });
-            
+
             modelBuilder.Entity<ShipmentStatusHistory>(entity =>
             {
                 entity.ToTable("ShipmentStatusLogs", "dbo");
@@ -62,12 +76,19 @@ namespace CourierMax.Infrastructure.Persistence
                 entity.Property(e => e.ChangedAt).HasColumnName("ChangedAt").IsRequired();
                 entity.Property(e => e.ChangeReason).HasColumnName("ChangeReason");
                 entity.Property(e => e.UserId).HasColumnName("UserId").IsRequired();
-            
+
                 entity.HasOne<Shipment>()
                     .WithMany(s => s.StatusHistory)
                     .HasForeignKey(e => e.ShipmentId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
+        }
+        
+        private static CourierMax.Domain.Enums.PackageType ConvertToPackageType(string value)
+        {
+            return Enum.TryParse<CourierMax.Domain.Enums.PackageType>(value, out var result)
+                ? result
+                : CourierMax.Domain.Enums.PackageType.Paquete;
         }
     }
 }
