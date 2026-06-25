@@ -12,16 +12,15 @@ namespace CourierMax.Tests.Application.Commands
     {
         private readonly Mock<IShipmentRepository> _repositoryMock;
         private readonly Mock<ISlaCalculator> _slaCalculatorMock;
-        private readonly Mock<ICityDistanceRepository> _cityDistanceRepositoryMock; // Nuevo Mock declarado
+        private readonly Mock<ICityDistanceRepository> _cityDistanceRepositoryMock;
         private readonly CreateShipmentCommandHandler _handler;
 
         public CreateShipmentCommandHandlerTests()
         {
             _repositoryMock = new Mock<IShipmentRepository>();
             _slaCalculatorMock = new Mock<ISlaCalculator>();
-            _cityDistanceRepositoryMock = new Mock<ICityDistanceRepository>(); // Inicialización del mock
-
-            // Inyección del nuevo parámetro requerido en el constructor del Handler
+            _cityDistanceRepositoryMock = new Mock<ICityDistanceRepository>();
+            
             _handler = new CreateShipmentCommandHandler(
                 _repositoryMock.Object,
                 _slaCalculatorMock.Object,
