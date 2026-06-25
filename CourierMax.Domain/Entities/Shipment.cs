@@ -1,6 +1,7 @@
-﻿using System.Text.RegularExpressions;
-using CourierMax.Domain.Enums;
+﻿using CourierMax.Domain.Enums;
 using CourierMax.Domain.Exceptions;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.RegularExpressions;
 
 namespace CourierMax.Domain.Entities
 {
@@ -30,6 +31,7 @@ namespace CourierMax.Domain.Entities
         public DateTime CreatedAt { get; private set; }
         public DateTime EstimatedDeliveryDate { get; set; }
 
+        [ExcludeFromCodeCoverage]
         private Shipment()
         {
         }
