@@ -1,8 +1,16 @@
 ﻿using CourierMax.Application.Shipments.Commands;
+using CourierMax.Application.Shipments.DTOs;
 using CourierMax.Application.Shipments.Queries;
 using CourierMax.Domain.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using System;
+using System.Linq;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace CourierMax.Api.Endpoints
 {
@@ -18,33 +26,36 @@ namespace CourierMax.Api.Endpoints
                            .WithTags("Shipments");
 
             group.MapPost("/", CreateShipmentAsync);
+
             group.MapGet("/{id:int}/history", GetShipmentHistoryAsync)
-                .WithName("GetShipmentHistory")
-                .WithOpenApi();
+                 .WithName("GetShipmentHistory")
+                 .WithOpenApi();
+
             group.MapPost("/assign-vehicle", AssignVehicleAsync).WithOpenApi();
+
             group.MapGet("/delayed", GetDelayedShipmentsAsync)
-                .WithName("GetDelayedShipments")
-                .WithOpenApi();
+                 .WithName("GetDelayedShipments")
+                 .WithOpenApi();
+
+            group.MapGet("/drivers/{driverId}/efficiency", GetDriverEfficiencyAsync)
+                 .WithName("GetDriverEfficiency")
+                 .WithOpenApi();
         }
 
         /// <summary>
         /// Crea un nuevo envío en el sistema aplicando validaciones de FluentValidation.
         /// </summary>
-        /// <param name="command">Los datos necesarios para la creación del envío.</param>
-        /// <param name="handler">El manejador encargado de procesar la creación del envío.</param>
-        /// <param name="validator">El validador de FluentValidation inyectado desde la capa de Application.</param>
-        /// <returns>Un resultado HTTP 201 Created con el envío creado o 400/500 en caso de error.</returns>
         private static async Task<IResult> CreateShipmentAsync(
             CreateShipmentCommand command,
             CreateShipmentCommandHandler handler,
             IValidator<CreateShipmentCommand> validator)
         {
             try
-            {                
+            {
                 var validationResult = await validator.ValidateAsync(command);
 
                 if (!validationResult.IsValid)
-                {                    
+                {
                     var errores = validationResult.Errors.Select(e => new {
                         Campo = e.PropertyName,
                         Error = e.ErrorMessage
@@ -56,7 +67,7 @@ namespace CourierMax.Api.Endpoints
                         errors = errores
                     });
                 }
-                
+
                 var result = await handler.HandleAsync(command);
                 return Results.Created($"/api/shipments/{result.Id}", result);
             }
@@ -73,9 +84,6 @@ namespace CourierMax.Api.Endpoints
         /// <summary>
         /// Asigna un vehículo a un envío registrando el cambio de estado (RF-02).
         /// </summary>
-        /// <param name="command">Los datos necesarios para la asignación del vehículo.</param>
-        /// <param name="handler">El manejador encargado de procesar la asignación.</param>
-        /// <returns>Un resultado HTTP 200 OK con el DTO actualizado, 404 si no existe o 400 por error de negocio.</returns>
         private static async Task<IResult> AssignVehicleAsync(
             AssignVehicleCommand command,
             AssignVehicleCommandHandler handler)
@@ -102,12 +110,9 @@ namespace CourierMax.Api.Endpoints
         /// <summary>
         /// Obtiene el historial cronológico de cambios de estado y auditoría de un envío específico (RF-02).
         /// </summary>
-        /// <param name="id">El identificador único del envío a consultar.</param>
-        /// <param name="queryHandler">Manejador encargado de procesar la consulta y obtener los logs desde la persistencia.</param>
-        /// <returns>Un resultado HTTP 200 con la lista o 404 si no registra auditorías.</returns>
         private static async Task<IResult> GetShipmentHistoryAsync(
             int id,
-            CourierMax.Application.Shipments.Queries.GetShipmentHistoryQueryHandler queryHandler)
+            GetShipmentHistoryQueryHandler queryHandler)
         {
             var history = await queryHandler.HandleAsync(id);
 
@@ -120,12 +125,12 @@ namespace CourierMax.Api.Endpoints
         }
 
         /// <summary>
-        /// Consulta los envíos que presentan retrasos respecto a su SLA dentro de un rango de fechas.
+        /// Consulta los envíos que presentan retrasos respecto a su SLA dentro de un rango de fechas (RF-05).
         /// </summary>
         private static async Task<IResult> GetDelayedShipmentsAsync(
             [FromQuery] DateTime startDate,
             [FromQuery] DateTime endDate,
-            CourierMax.Application.Shipments.Queries.GetDelayedShipmentsQueryHandler queryHandler)
+            GetDelayedShipmentsQueryHandler queryHandler)
         {
             if (startDate > endDate)
             {
@@ -136,6 +141,26 @@ namespace CourierMax.Api.Endpoints
             var delayedShipments = await queryHandler.HandleAsync(query);
 
             return Results.Ok(delayedShipments);
+        }
+
+        /// <summary>
+        /// Genera el reporte de métricas de eficiencia por conductor en un rango de fechas (RF-06).
+        /// </summary>
+        private static async Task<IResult> GetDriverEfficiencyAsync(
+            string driverId,
+            [FromQuery] DateTime startDate,
+            [FromQuery] DateTime endDate,
+            [FromServices] GetDriverEfficiencyQueryHandler queryHandler)
+        {
+            if (startDate > endDate)
+            {
+                return Results.BadRequest(new { message = "La fecha de inicio no puede ser mayor a la fecha de fin." });
+            }
+
+            var query = new GetDriverEfficiencyQuery(driverId, startDate, endDate);
+            var report = await queryHandler.HandleAsync(query);
+
+            return Results.Ok(report);
         }
     }
 }

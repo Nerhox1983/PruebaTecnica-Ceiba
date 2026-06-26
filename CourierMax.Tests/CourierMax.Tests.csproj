@@ -24,6 +24,7 @@
   <ItemGroup>
     <ProjectReference Include="..\CourierMax.Application\CourierMax.Application.csproj" />
     <ProjectReference Include="..\CourierMax.Domain\CourierMax.Domain.csproj" />
+    <ProjectReference Include="..\CourierMax.Infrastructure\CourierMax.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

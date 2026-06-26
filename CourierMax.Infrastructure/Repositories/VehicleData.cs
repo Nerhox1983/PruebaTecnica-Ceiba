@@ -3,6 +3,7 @@ using CourierMax.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using CourierMax.Domain.Entities;
 
 namespace CourierMax.Infrastructure.Repositories
 {
@@ -15,7 +16,7 @@ namespace CourierMax.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<VehicleData?> GetByLicensePlateAsync(string licensePlate)
+        public async Task<Vehicle?> GetByLicensePlateAsync(string licensePlate)
         {
             const string query = @"
                 SELECT TOP 1 VehicleId, LicensePlate, MaxWeightKg, MaxVolumeM3, IsActive 
@@ -36,7 +37,7 @@ namespace CourierMax.Infrastructure.Repositories
             using var reader = await command.ExecuteReaderAsync();
             if (await reader.ReadAsync())
             {
-                return new VehicleData
+                return new Vehicle
                 {
                     VehicleId = reader.GetInt32(0),
                     LicensePlate = reader.GetString(1),
@@ -48,7 +49,7 @@ namespace CourierMax.Infrastructure.Repositories
             return null;
         }
         
-        public async Task<VehicleData?> GetByIdAsync(int vehicleId)
+        public async Task<Vehicle?> GetByIdAsync(int vehicleId)
         {
             const string query = @"
                 SELECT TOP 1 VehicleId, LicensePlate, MaxWeightKg, MaxVolumeM3, IsActive 
@@ -69,7 +70,7 @@ namespace CourierMax.Infrastructure.Repositories
             using var reader = await command.ExecuteReaderAsync();
             if (await reader.ReadAsync())
             {
-                return new VehicleData
+                return new Vehicle
                 {
                     VehicleId = reader.GetInt32(0),
                     LicensePlate = reader.GetString(1),
@@ -81,7 +82,12 @@ namespace CourierMax.Infrastructure.Repositories
             return null;
         }
 
-
+        public async Task<IEnumerable<Vehicle>> GetByDriverOrPlateAsync(string driverOrPlate)
+        {
+            return await _context.Vehicles
+                .Where(v => v.DriverName == driverOrPlate || v.LicensePlate == driverOrPlate)
+                .ToListAsync();
+        }
 
     }
 }

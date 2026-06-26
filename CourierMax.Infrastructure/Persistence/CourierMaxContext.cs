@@ -11,6 +11,7 @@ namespace CourierMax.Infrastructure.Persistence
         public DbSet<Shipment> Shipments => Set<Shipment>();
         public DbSet<ShipmentStatusHistory> ShipmentStatusHistories => Set<ShipmentStatusHistory>();
         public DbSet<CityDistance> CityDistances => Set<CityDistance>();
+        public DbSet<CourierMax.Domain.Entities.Vehicle> Vehicles => Set<CourierMax.Domain.Entities.Vehicle>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -102,6 +103,19 @@ namespace CourierMax.Infrastructure.Persistence
                     .WithMany(s => s.StatusHistory)
                     .HasForeignKey(e => e.ShipmentId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Domain.Entities.Vehicle>(entity =>
+            {
+                entity.ToTable("Vehicles", "dbo");
+                entity.HasKey(e => e.VehicleId);
+
+                entity.Property(e => e.VehicleId).HasColumnName("VehicleId");
+                entity.Property(e => e.LicensePlate).HasColumnName("LicensePlate").HasMaxLength(7).IsRequired();
+                entity.Property(e => e.DriverName).HasColumnName("DriverName").HasMaxLength(150).IsRequired();
+                entity.Property(e => e.MaxWeightKg).HasColumnName("MaxWeightKg").HasColumnType("decimal(5,2)").IsRequired();
+                entity.Property(e => e.MaxVolumeM3).HasColumnName("MaxVolumeM3").HasColumnType("decimal(5,2)").IsRequired();
+                entity.Property(e => e.IsActive).HasColumnName("IsActive").IsRequired();
             });
         }
 

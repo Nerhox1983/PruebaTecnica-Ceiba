@@ -50,7 +50,7 @@ namespace CourierMax.Tests.Application.Commands
         {            
             var command = new AssignVehicleCommand { ShipmentId = 20, VehicleId = 1, UserId = "1" };
             var shipment = CreateTestShipment(5.0m, 40, 30, 20);
-            var vehicle = new VehicleData
+            var vehicle = new Vehicle
             {
                 VehicleId = 1,
                 LicensePlate = "ABC-123",
@@ -75,7 +75,7 @@ namespace CourierMax.Tests.Application.Commands
         {
             var command = new AssignVehicleCommand { ShipmentId = 20, VehicleId = 2, UserId = "1" };
             var shipment = CreateTestShipment(5.0m, 40, 30, 20);
-            var vehicle = new VehicleData { VehicleId = 2, IsActive = false };
+            var vehicle = new Vehicle { VehicleId = 2, IsActive = false };
 
             _shipmentRepositoryMock.Setup(r => r.GetByIdAsync(20)).ReturnsAsync(shipment);
             _vehicleRepositoryMock.Setup(r => r.GetByIdAsync(2)).ReturnsAsync(vehicle);
@@ -89,7 +89,7 @@ namespace CourierMax.Tests.Application.Commands
         {
             var command = new AssignVehicleCommand { ShipmentId = 17, VehicleId = 4, UserId = "1" };
             var shipment = CreateTestShipment(12.50m, 30, 20, 15);
-            var vehicle = new VehicleData
+            var vehicle = new Vehicle
             {
                 VehicleId = 4,
                 MaxWeightKg = 5.0m,

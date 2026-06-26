@@ -10,5 +10,6 @@ namespace CourierMax.Domain.Interfaces
         Task<bool> ExistsByTrackingCodeAsync(string trackingCode);
         Task<List<ShipmentStatusHistory>> GetStatusHistoryAsync(int shipmentId);
         Task<IEnumerable<Shipment>> GetDelayedShipmentsAsync(DateTime startDate, DateTime endDate);
+        //Task<DriverEfficiencyReportDto> GetDriverEfficiencyReportAsync(string driverId, DateTime startDate, DateTime endDate);
     }
 }

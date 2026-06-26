@@ -26,6 +26,8 @@ builder.Services.AddScoped<ICityDistanceRepository, CityDistanceRepository>();
 
 builder.Services.AddScoped<IValidator<CreateShipmentCommand>, CourierMax.Application.Shipments.Commands.CreateShipment.CreateShipmentCommandValidator>();
 builder.Services.AddScoped<CourierMax.Application.Shipments.Queries.GetDelayedShipmentsQueryHandler>();
+builder.Services.AddScoped<CourierMax.Application.Shipments.Interfaces.IShipmentQueryService, CourierMax.Infrastructure.Services.ShipmentQueryService>();
+builder.Services.AddScoped<CourierMax.Application.Shipments.Queries.GetDriverEfficiencyQueryHandler>();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
